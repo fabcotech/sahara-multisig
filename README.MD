@@ -1,4 +1,4 @@
-![Sahara multisig](https://raw.githubusercontent.com/fabcotech/sahara-multisig/refs/heads/master/assets/saharamultisig.jpg)
+![Sahara multisig](https://github.com/fabcotech/sahara-multisig/blob/main/assets/saharamultisig.jpg?raw=true)
 
 # Sahara multisig
 
