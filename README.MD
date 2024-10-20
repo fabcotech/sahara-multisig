@@ -1,5 +1,7 @@
 ![Sahara multisig](https://github.com/fabcotech/sahara-multisig/blob/main/assets/saharamultisig.jpg?raw=true)
 
+![state of the workflow](https://github.com/fabcotech/sahara-multisig/actions/workflows/main.yml/badge.svg)
+
 # Sahara multisig
 
 Sahara Multisig is a new kind of dynamic-membership multisig for EVM-based blockchains.
