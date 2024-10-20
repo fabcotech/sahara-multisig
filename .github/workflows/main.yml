@@ -29,11 +29,11 @@ jobs:
         run: npm run ci
 
       - name: Use variables
-        run: echo $PK_1
+        run: echo ${{ vars.PK_1 }}
         env:
-          PK_1: ${{ vars.PK_1 }}
+          PK_1: vars.PK_1
 
       - name: Run tests
         run: npm run test
         env:
-          PK_1: ${{ vars.PK_1 }}
+          PK_1: vars.PK_1
