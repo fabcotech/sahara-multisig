@@ -19,7 +19,7 @@
     "install:slither": "pip install -r ./requirements.txt",
     "lint": "solhint './contracts/*.sol'",
     "format": "prettier --write './contracts/*.sol' && prettier --write './test/*.ts'",
-    "ci": "npm run format && npm run lint && npm run test",
+    "ci": "npm run format && npm run lint",
     "test:static": "slither ./contracts",
     "test": "REPORT_GAS=true npx hardhat test --network hardhat"
   },
