@@ -7,6 +7,8 @@ on:
   pull_request:
     branches:
       - '*'
+  env:
+    PK_1: ${{ vars.PK_1 }}
 
 jobs:
   build-and-test:
@@ -27,5 +29,11 @@ jobs:
 
       - name: Run CI script
         run: npm run ci
+      - name: Use variables
+        run: |
+          echo "pk1 : $PK_1"
+
+      - name: Run tests
+        run: npm run test
         env:
           PK_1: ${{ vars.PK_1 }}
