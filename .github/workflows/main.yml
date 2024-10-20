@@ -23,7 +23,9 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install 
+        run: npm install
 
       - name: Run CI script
         run: npm run ci
+        env:
+          PK_1: ${{ vars.PK_1 }}
