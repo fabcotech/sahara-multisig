@@ -28,12 +28,5 @@ jobs:
       - name: Run CI script
         run: npm run ci
 
-      - name: Use variables
-        run: echo ${{ vars.PK_1 }}
-        env:
-          PK_1: vars.PK_1
-
       - name: Run tests
-        run: npm run test
-        env:
-          PK_1: vars.PK_1
+        run: PK_1=556863b01e01906d378a1278639c26c5675342aa3deebe6997b477d63e74221e npm run test
