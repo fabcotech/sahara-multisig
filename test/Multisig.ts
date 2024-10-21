@@ -14,7 +14,7 @@ const Actions = {
   Leave: '03',
   Withdraw: '04',
 };
-/* describe('Multisig contract 2-3 users', function () {
+describe('Multisig contract 2-3 users', function () {
   async function deploy() {
     const [userAWallet, userBWallet, userCWallet] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory('Multisig');
@@ -215,11 +215,9 @@ const Actions = {
     ).to.equal(true);
 
     // operations have been reset
-    let member1Operation = await instance.operations(0);
-    console.log('member1Operation');
-    console.log(member1Operation);
+    const member1Operation = await instance.operations(0);
     expect(member1Operation).to.equal('0x');
-    let member2Operation = await instance.operations(1);
+    const member2Operation = await instance.operations(1);
     expect(member2Operation).to.equal('0x');
     expect(
       (await instance.provider.getBalance(instance.address)).eq(
@@ -227,7 +225,7 @@ const Actions = {
       )
     ).to.equal(true);
   });
-}); */
+});
 
 describe('Multisig contract 100 users', function () {
   async function deploy() {
@@ -297,31 +295,47 @@ describe('Multisig contract 100 users', function () {
   });
   it('14 users (66%) vote for kicking 7 others', async function () {
     const group1 = wallets.slice(0, 13);
-    console.log(group1.length);
     const group2 = wallets.slice(13);
-    const bytes = Buffer.concat(
-      group2.map((w) => Buffer.from(`${Actions.Kick}${w.address.slice(2)}`))
-    );
 
-    const ABI = ['function vote(bytes calldata params)'];
-    const iface = new ethers.utils.Interface(ABI);
-    const calldata = iface.encodeFunctionData('vote', [
-      Buffer.from(`0x`) + bytes,
+    const iface = new ethers.utils.Interface([
+      'function vote(bytes calldata params)',
     ]);
-    // group1 : 13 wallets + userA = 14
-    for (const wallet of group1.concat(userAWallet)) {
-      console.log(wallet.address);
-      const tx2 = await wallet.sendTransaction({
+
+    // group 2 want to kick group1 out
+    // nothing happens
+    const bytesGroup1Kicked = Buffer.concat(
+      group1.map((w) => Buffer.from(`${Actions.Kick}${w.address.slice(2)}`))
+    );
+    for (const wallet of group2) {
+      await wallet.sendTransaction({
         to: instance.address,
         value: '0',
-        data: calldata,
+        data: iface.encodeFunctionData('vote', [
+          Buffer.from(`0x`) + bytesGroup1Kicked,
+        ]),
       });
     }
+
+    // group 1 + user A (14) kick group 2
+    const bytesGroup2Kicked = Buffer.concat(
+      group2.map((w) => Buffer.from(`${Actions.Kick}${w.address.slice(2)}`))
+    );
+    for (const wallet of group1.concat(userAWallet)) {
+      await wallet.sendTransaction({
+        to: instance.address,
+        value: '0',
+        data: iface.encodeFunctionData('vote', [
+          Buffer.from(`0x`) + bytesGroup2Kicked,
+        ]),
+      });
+    }
+
+    // group1 : 13 wallets + userA = 14
     expect(await instance.operations(13)).to.equal('0x');
+    // only 14 members
     let member15peration = null;
     try {
       member15peration = await instance.operations(14);
-      console.log('member15peration', member15peration);
     } catch (err) {
       // do nothing, throw expected
     }
