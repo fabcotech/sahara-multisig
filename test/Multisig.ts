@@ -227,7 +227,7 @@ describe('Multisig contract 2-3 users', function () {
   });
 });
 
-describe('Multisig contract 100 users', function () {
+describe('Multisig contract 20 users', function () {
   async function deploy() {
     const [userAWallet, userBWallet, userCWallet] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory('Multisig');
