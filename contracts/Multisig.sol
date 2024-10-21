@@ -2,18 +2,6 @@
 pragma solidity ^0.8.20;
 import 'forge-std/console.sol';
 
-enum Action {
-  None,
-  Welcome,
-  Kick,
-  Leave,
-  Withdraw
-}
-struct Operation {
-  Action action;
-  bytes params;
-}
-
 contract Multisig {
   error Unauthorized();
   address[] public membersAddress;
@@ -72,7 +60,7 @@ contract Multisig {
   }
 
   function eventuallyExecute(bytes calldata params) internal {
-    if (params.length % 21 != 0 || params.length == 0) {
+    if (params.length == 0) {
       return;
     }
     uint sameVotes = 0;
