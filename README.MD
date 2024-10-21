@@ -14,7 +14,7 @@ The membership is dynamic, new members may join and/or be kicked over the lifeti
 
 - **None (0)**: null/nothing vote.
 - **Welcome (1)**: Welcome a user into the multisig, identified by Ethereum address.
-- **Kick (2)**: Kick a user from the multisig.
+- **Kick (2)**: Kick a user out of the multisig.
 - **Leave (3)**: Leave the multisig, not subjected to the 66.6% rule, can be executed unilaterally.
 - **Withdraw (4)**: Divide the contract's balance by the number of members, transfer equal portion to each.
 - **WithdrawToken (5)**: _(Coming soon)_ Same but for ERC20 token (ex: USDC, USDT etc.)

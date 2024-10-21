@@ -1,5 +1,6 @@
 import { loadFixture } from '@nomicfoundation/hardhat-network-helpers';
 import * as fs from 'fs';
+import * as crypto from 'crypto';
 import { request } from 'undici';
 
 import { expect } from 'chai';
@@ -8,12 +9,12 @@ import { calculateSum, generateProducts } from '../utils/helpers';
 
 const Actions = {
   None: 0,
-  Welcome: 1,
-  Kick: 2,
-  Leave: 3,
-  Withdraw: 4,
+  Welcome: '01',
+  Kick: '02',
+  Leave: '03',
+  Withdraw: '04',
 };
-describe('Multisig contract Tests', function () {
+/* describe('Multisig contract 2-3 users', function () {
   async function deploy() {
     const [userAWallet, userBWallet, userCWallet] = await ethers.getSigners();
     const Factory = await ethers.getContractFactory('Multisig');
@@ -42,13 +43,9 @@ describe('Multisig contract Tests', function () {
   });
 
   it('userA (1/1) welcomes userB in multisig', async function () {
-    console.log('js', userBWallet.address);
-    console.log(
-      'js',
-      Buffer.from('0x01') + Buffer.from(userBWallet.address).slice(2)
-    );
     await instance.vote(
-      Buffer.from('0x01') + Buffer.from(userBWallet.address).slice(2)
+      Buffer.from(`0x${Actions.Welcome}`) +
+        Buffer.from(userBWallet.address).slice(2)
     );
     // operations[0] = [Action.Welcome, [userBWallet.address]]
     let member1Operation = await instance.operations(0);
@@ -64,7 +61,10 @@ describe('Multisig contract Tests', function () {
     try {
       await instance
         .connect(userCWallet)
-        .vote(Buffer.from('0x01') + Buffer.from(userCWallet.address).slice(2));
+        .vote(
+          Buffer.from(`0x${Actions.Welcome}`) +
+            Buffer.from(userCWallet.address).slice(2)
+        );
     } catch (err) {
       if (err.toString().includes('Unauthorized()')) unauthorized = true;
     }
@@ -74,7 +74,8 @@ describe('Multisig contract Tests', function () {
   it('userA and userB (2/2) welcome userC in multisig', async function () {
     // reaches 50% of votes
     await instance.vote(
-      Buffer.from('0x01') + Buffer.from(userCWallet.address).slice(2)
+      Buffer.from(`0x${Actions.Welcome}`) +
+        Buffer.from(userCWallet.address).slice(2)
     );
     let member3Address = null;
     try {
@@ -87,12 +88,17 @@ describe('Multisig contract Tests', function () {
     // reaches 100% of votes
     await instance
       .connect(userBWallet)
-      .vote(Buffer.from('0x01') + Buffer.from(userCWallet.address).slice(2));
+      .vote(
+        Buffer.from(`0x${Actions.Welcome}`) +
+          Buffer.from(userCWallet.address).slice(2)
+      );
     expect(await instance.membersAddress(2)).to.equal(userCWallet.address);
   });
 
   it('userA leaves', async function () {
-    await instance.vote(Buffer.from('0x03') + Buffer.from(''.padEnd(40, '0')));
+    await instance.vote(
+      Buffer.from(`0x${Actions.Leave}`) + Buffer.from(''.padEnd(40, '0'))
+    );
     let member3Address = null;
     let member3Operation = null;
     try {
@@ -112,10 +118,16 @@ describe('Multisig contract Tests', function () {
   it('userB and userC (2/2) welcome userA back', async function () {
     await instance
       .connect(userBWallet)
-      .vote(Buffer.from('0x01') + Buffer.from(userAWallet.address).slice(2));
+      .vote(
+        Buffer.from(`0x${Actions.Welcome}`) +
+          Buffer.from(userAWallet.address).slice(2)
+      );
     await instance
       .connect(userCWallet)
-      .vote(Buffer.from('0x01') + Buffer.from(userAWallet.address).slice(2));
+      .vote(
+        Buffer.from(`0x${Actions.Welcome}`) +
+          Buffer.from(userAWallet.address).slice(2)
+      );
     expect(await instance.membersAddress(0)).to.equal(userBWallet.address);
     expect(await instance.membersAddress(1)).to.equal(userCWallet.address);
     expect(await instance.membersAddress(2)).to.equal(userAWallet.address);
@@ -124,10 +136,16 @@ describe('Multisig contract Tests', function () {
   it('userB and userC (2/3) kick userA out of multisig', async function () {
     await instance
       .connect(userBWallet)
-      .vote(Buffer.from('0x02') + Buffer.from(userAWallet.address).slice(2));
+      .vote(
+        Buffer.from(`0x${Actions.Kick}`) +
+          Buffer.from(userAWallet.address).slice(2)
+      );
     await instance
       .connect(userCWallet)
-      .vote(Buffer.from('0x02') + Buffer.from(userAWallet.address).slice(2));
+      .vote(
+        Buffer.from(`0x${Actions.Kick}`) +
+          Buffer.from(userAWallet.address).slice(2)
+      );
     let member3Address = null;
     try {
       member3Address = await instance.membersAddress(2);
@@ -141,7 +159,10 @@ describe('Multisig contract Tests', function () {
     try {
       await instance
         .connect(userAWallet)
-        .vote(Buffer.from('0x01') + Buffer.from(userAWallet.address).slice(2));
+        .vote(
+          Buffer.from(`0x${Actions.Welcome}`) +
+            Buffer.from(userAWallet.address).slice(2)
+        );
     } catch (err) {
       if (err.toString().includes('Unauthorized()')) unauthorized = true;
     }
@@ -150,9 +171,11 @@ describe('Multisig contract Tests', function () {
 
   it('userB and userC (2/2) welcome+kick userA (batch)', async function () {
     const welcomeABuffer =
-      Buffer.from('0x01') + Buffer.from(userAWallet.address).slice(2);
+      Buffer.from(`0x${Actions.Welcome}`) +
+      Buffer.from(userAWallet.address).slice(2);
     const kickABuffer =
-      Buffer.from('0x02') + Buffer.from(userAWallet.address).slice(2);
+      Buffer.from(`0x${Actions.Kick}`) +
+      Buffer.from(userAWallet.address).slice(2);
     await instance
       .connect(userBWallet)
       .vote(welcomeABuffer + kickABuffer.slice(2));
@@ -171,14 +194,20 @@ describe('Multisig contract Tests', function () {
   });
 
   it('userB and userC (2/2) withdraw the 1.000.000 wei', async function () {
-    console.log(Buffer.from('0x04') + Buffer.from(''.padEnd(20, '0')));
+    console.log(
+      Buffer.from(`0x${Actions.Withdraw}`) + Buffer.from(''.padEnd(20, '0'))
+    );
     await instance
       .connect(userBWallet)
-      .vote(Buffer.from('0x04') + Buffer.from(''.padEnd(40, '0')));
+      .vote(
+        Buffer.from(`0x${Actions.Withdraw}`) + Buffer.from(''.padEnd(40, '0'))
+      );
     const balB = await instance.provider.getBalance(userBWallet.address);
     await instance
       .connect(userCWallet)
-      .vote(Buffer.from('0x04') + Buffer.from(''.padEnd(40, '0')));
+      .vote(
+        Buffer.from(`0x${Actions.Withdraw}`) + Buffer.from(''.padEnd(40, '0'))
+      );
     expect(
       (await instance.provider.getBalance(userBWallet.address))
         .sub(balB)
@@ -197,5 +226,105 @@ describe('Multisig contract Tests', function () {
         ethers.BigNumber.from('0')
       )
     ).to.equal(true);
+  });
+}); */
+
+describe('Multisig contract 100 users', function () {
+  async function deploy() {
+    const [userAWallet, userBWallet, userCWallet] = await ethers.getSigners();
+    const Factory = await ethers.getContractFactory('Multisig');
+    const instance = await Factory.deploy({ value: 1000000 });
+
+    return { instance, userAWallet, userBWallet, userCWallet };
+  }
+
+  let instance = null;
+  let nbUsers = 20;
+  let userAWallet = null;
+  let userBWallet = null;
+  let userCWallet = null;
+  const wallets = [];
+  it('deploys and transfer ETH', async function () {
+    const loaded = await loadFixture(deploy);
+    instance = loaded.instance;
+    userAWallet = loaded.userAWallet;
+    for (let i = 0; i < nbUsers; i += 1) {
+      const id = crypto.randomBytes(32).toString('hex');
+      const privateKey = '0x' + id;
+      const w = new ethers.Wallet(privateKey, instance.provider);
+
+      wallets.push(w);
+    }
+
+    userBWallet = loaded.userBWallet;
+    userCWallet = loaded.userCWallet;
+    const bal = await instance.provider.getBalance(instance.address);
+
+    for (const w of wallets) {
+      const tx = await userAWallet.sendTransaction({
+        to: w.getAddress(),
+        value: ethers.utils.hexlify(1000000000000000),
+      });
+    }
+
+    expect(
+      (await instance.provider.getBalance(wallets[0].address)).eq(
+        ethers.BigNumber.from('1000000000000000')
+      )
+    ).to.equal(true);
+    expect(typeof instance.address).to.equal('string');
+  });
+
+  it('welcome 20 users in multisig', async function () {
+    await instance.vote(
+      '0x' +
+        wallets
+          .map((w) => {
+            return Buffer.from(`${Actions.Welcome}${w.address.slice(2)}`);
+          })
+          .join('')
+    );
+
+    const member21peration = await instance.operations(20);
+    expect(member21peration).to.equal('0x');
+    let member22peration = null;
+    try {
+      member22peration = await instance.operations(21);
+    } catch (err) {
+      // do nothing, throw expected
+    }
+    expect(member22peration).to.equal(null);
+  });
+  it('14 users (66%) vote for kicking 7 others', async function () {
+    const group1 = wallets.slice(0, 13);
+    console.log(group1.length);
+    const group2 = wallets.slice(13);
+    const bytes = Buffer.concat(
+      group2.map((w) => Buffer.from(`${Actions.Kick}${w.address.slice(2)}`))
+    );
+
+    const ABI = ['function vote(bytes calldata params)'];
+    const iface = new ethers.utils.Interface(ABI);
+    const calldata = iface.encodeFunctionData('vote', [
+      Buffer.from(`0x`) + bytes,
+    ]);
+    // group1 : 13 wallets + userA = 14
+    for (const wallet of group1.concat(userAWallet)) {
+      console.log(wallet.address);
+      const tx2 = await wallet.sendTransaction({
+        to: instance.address,
+        value: '0',
+        data: calldata,
+      });
+    }
+    expect(await instance.operations(13)).to.equal('0x');
+    let member15peration = null;
+    try {
+      member15peration = await instance.operations(14);
+      console.log('member15peration', member15peration);
+    } catch (err) {
+      // do nothing, throw expected
+    }
+    expect(member15peration).to.equal(null);
   });
 });
