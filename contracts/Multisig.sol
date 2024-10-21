@@ -17,17 +17,17 @@ struct Operation {
 contract Multisig {
   error Unauthorized();
   address[] public membersAddress;
-  Operation[] public operations;
+  bytes[] public operations;
 
   constructor() payable {
-    operations.push(Operation(Action.None, ''));
+    operations.push(bytes(''));
     membersAddress.push(msg.sender);
   }
 
   receive() external payable {}
 
   function withdraw() internal {
-    if (address(this).balance < 0) return;
+    if (address(this).balance < 1) return;
     uint256 balance = address(this).balance;
     for (uint i = 0; i < membersAddress.length; i++) {
       payable(membersAddress[i]).transfer(balance / membersAddress.length);
@@ -35,11 +35,13 @@ contract Multisig {
   }
 
   function welcome(bytes memory addr) internal {
-    operations.push(Operation(Action.None, ''));
+    console.log('== welcome');
+    operations.push(bytes(''));
     membersAddress.push(address(bytes20(bytes(addr))));
   }
 
   function removeMember(uint index) internal {
+    console.log('== removeMember');
     for (uint i = index; i < membersAddress.length - 1; i++) {
       membersAddress[i] = membersAddress[i + 1];
       operations[i] = operations[i + 1];
@@ -50,71 +52,75 @@ contract Multisig {
     operations.pop();
   }
 
-  function resetOperations(uint[] memory indexes) internal {
-    for (uint i = 0; i < indexes.length; i++) {
-      if (indexes[i] == 1) {
-        operations[i] = Operation(Action.None, '');
+  function resetOperations(address[] memory addresses) internal {
+    for (uint i = 0; i < addresses.length; i++) {
+      for (uint j = 0; j < membersAddress.length; j++) {
+        if (membersAddress[j] == addresses[i]) {
+          operations[i] = bytes('');
+          break;
+        }
       }
     }
   }
 
-  // Welcome and Kick have address as param
-  function eventuallyWithdraw(Action action) internal {
-    uint sameVotes = 0;
-    uint[] memory sameVotesIndexes = new uint[](membersAddress.length);
-    for (uint i = 0; i < membersAddress.length; i++) {
-      if (action == operations[i].action) {
-        sameVotes += 1;
-        sameVotesIndexes[i] = 1;
-      }
+  function bytesToUint(bytes memory b) internal pure returns (uint256) {
+    uint256 number;
+    for (uint i = 0; i < b.length; i++) {
+      number = number + uint(uint8(b[i])) * (2 ** (8 * (b.length - (i + 1))));
     }
-    if ((1000000 * sameVotes) / membersAddress.length > 666665) {
-      console.log('more than 2/3 have voted withdraw');
-      withdraw();
-      resetOperations(sameVotesIndexes);
-    }
+    return number;
   }
 
-  function eventuallyWelcomeOrKick(Action action, bytes memory addr) internal {
-    // addr may be 1 address or a
-    // list of concatenated addresses
-    /* for (uint i = 0; i < addr.length; i++) {
-      console.logBytes(addr);
-      console.logBytes8(bytes8(addr[i]));
-    } */
+  function eventuallyExecute(bytes calldata params) internal {
+    if (params.length % 21 != 0 || params.length == 0) {
+      return;
+    }
     uint sameVotes = 0;
-    uint[] memory sameVotesIndexes = new uint[](membersAddress.length);
+    address[] memory sameVotesAddresses = new address[](membersAddress.length);
     for (uint i = 0; i < membersAddress.length; i++) {
+      // todo
+      // return if we know threshold will not be reached
       if (
-        action == operations[i].action &&
-        keccak256(abi.encodePacked(addr)) ==
-        keccak256(abi.encodePacked(operations[i].params))
+        keccak256(abi.encodePacked(params)) ==
+        keccak256(abi.encodePacked(operations[i]))
       ) {
         sameVotes += 1;
-        sameVotesIndexes[i] = 1;
+        sameVotesAddresses[i] = membersAddress[i];
       }
     }
-
     if ((1000000 * sameVotes) / membersAddress.length > 666665) {
-      if (action == Action.Welcome) {
-        console.log('more than 2/3 have voted welcome');
-        resetOperations(sameVotesIndexes);
-        welcome(addr);
-      } else if (action == Action.Kick) {
-        console.log('more than 2/3 have voted kick');
-        uint indexOfMemberToKick = 0;
-        for (uint i = 0; i < membersAddress.length; i++) {
-          if (membersAddress[i] == address(bytes20(addr))) {
-            indexOfMemberToKick = i;
+      console.log('more than 2/3 have voted same set of actions');
+      uint256 i = 0;
+      while (i < params.length) {
+        bytes memory action = params[0 + i:1 + i];
+        // Welcome
+        if (bytesToUint(action) == 1) {
+          bytes memory addr = params[1 + i:21 + i];
+          welcome(addr);
+          // Kick
+        } else if (bytesToUint(action) == 2) {
+          bytes memory addr = params[1 + i:21 + i];
+          uint membersAddressLength = membersAddress.length;
+          for (uint j = 0; j < membersAddressLength; j++) {
+            if (membersAddress[j] == address(uint160(bytes20(addr)))) {
+              removeMember(j);
+              break;
+            }
           }
+          // Withdraw
+        } else if (bytesToUint(action) == 4) {
+          withdraw();
         }
-        resetOperations(sameVotesIndexes);
-        removeMember(indexOfMemberToKick);
+        i += 21;
       }
+      resetOperations(sameVotesAddresses);
     }
   }
 
-  function vote(Action action, bytes calldata params) external {
+  function vote(bytes calldata params) external {
+    // params must be an array of 21 bytes chunks
+    // [byte1: action, byte2-21: address]
+    require(params.length % 21 == 0, 'params.length % 21 != 0');
     bool authorized = false;
     uint index = 0;
     for (uint i = 0; i < membersAddress.length; i++) {
@@ -127,17 +133,13 @@ contract Multisig {
       revert Unauthorized();
     }
 
-    if (action == Action.Welcome) {
-      operations[index] = Operation(action, params);
-      eventuallyWelcomeOrKick(action, params);
-    } else if (action == Action.Kick) {
-      operations[index] = Operation(action, params);
-      eventuallyWelcomeOrKick(action, params);
-    } else if (action == Action.Leave) {
+    // first action may be Leave
+    bytes memory action = params[0:1];
+    if (bytesToUint(action) == 3) {
       removeMember(index);
-    } else if (action == Action.Withdraw) {
-      operations[index] = Operation(action, params);
-      eventuallyWithdraw(action);
+    } else {
+      operations[index] = params;
+      eventuallyExecute(params);
     }
   }
 }
