@@ -14,6 +14,7 @@ contract Multisig {
 
   receive() external payable {}
 
+  /// @notice Withdraw contract balance to multisig members
   function withdraw() internal {
     if (address(this).balance < 1) return;
     uint256 balance = address(this).balance;
@@ -22,12 +23,16 @@ contract Multisig {
     }
   }
 
+  /// @notice Add a new member in multisig
+  /// @param addr address as bytes
   function welcome(bytes memory addr) internal {
     console.log('== welcome');
     operations.push(bytes(''));
     membersAddress.push(address(bytes20(bytes(addr))));
   }
 
+  /// @notice Removes a member from the multisig
+  /// @param index index of the member to remove in membersAddress and operations arrays
   function removeMember(uint index) internal {
     console.log('== removeMember');
     for (uint i = index; i < membersAddress.length - 1; i++) {
@@ -40,6 +45,8 @@ contract Multisig {
     operations.pop();
   }
 
+  /// @notice Reset operations for a set of addresses
+  /// @param addresses array of addresses for which to reset
   function resetOperations(address[] memory addresses) internal {
     for (uint i = 0; i < addresses.length; i++) {
       for (uint j = 0; j < membersAddress.length; j++) {
@@ -59,6 +66,8 @@ contract Multisig {
     return number;
   }
 
+  /// @notice Counts all votes with same bytes, and checks for 66.6% threshold for execution
+  /// @param params will process only votes with same bytes
   function eventuallyExecute(bytes calldata params) internal {
     if (params.length == 0) {
       return;
@@ -76,6 +85,7 @@ contract Multisig {
         sameVotesAddresses[i] = membersAddress[i];
       }
     }
+
     if ((1000000 * sameVotes) / membersAddress.length > 666665) {
       console.log('more than 2/3 have voted same set of actions');
       uint256 i = 0;
@@ -105,6 +115,16 @@ contract Multisig {
     }
   }
 
+  /// @notice Triggers eventuallyExecute function
+  /// @param params will process only votes with same bytes
+  function execute(bytes calldata params) external {
+    // params must be an array of 21 bytes chunks
+    // [byte1: action, byte2-21: address]
+    require(params.length % 21 == 0, 'params.length % 21 != 0');
+    eventuallyExecute(params);
+  }
+
+  /// @notice Records the vote of a member
   function vote(bytes calldata params) external {
     // params must be an array of 21 bytes chunks
     // [byte1: action, byte2-21: address]
@@ -127,7 +147,6 @@ contract Multisig {
       removeMember(index);
     } else {
       operations[index] = params;
-      eventuallyExecute(params);
     }
   }
 }
