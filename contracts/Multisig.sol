@@ -74,13 +74,11 @@ contract Multisig {
     }
     uint sameVotes = 0;
     address[] memory sameVotesAddresses = new address[](membersAddress.length);
+    bytes32 hashParams = keccak256(abi.encodePacked(params));
     for (uint i = 0; i < membersAddress.length; i++) {
       // todo
-      // return if we know threshold will not be reached
-      if (
-        keccak256(abi.encodePacked(params)) ==
-        keccak256(abi.encodePacked(operations[i]))
-      ) {
+      // break if we know threshold will not be reached
+      if (hashParams == keccak256(abi.encodePacked(operations[i]))) {
         sameVotes += 1;
         sameVotesAddresses[i] = membersAddress[i];
       }
