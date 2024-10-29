@@ -35,12 +35,13 @@ contract Multisig {
   /// @param index index of the member to remove in membersAddress and operations arrays
   function removeMember(uint index) internal {
     console.log('== removeMember');
-    for (uint i = index; i < membersAddress.length - 1; i++) {
-      membersAddress[i] = membersAddress[i + 1];
-      operations[i] = operations[i + 1];
+    uint lastIndex = membersAddress.length - 1;
+    if (lastIndex != index) {
+      address lastAddress = membersAddress[lastIndex];
+      membersAddress[index] = lastAddress;
+      bytes memory lastOperation = operations[lastIndex];
+      operations[index] = lastOperation;
     }
-    delete membersAddress[membersAddress.length - 1];
-    delete operations[membersAddress.length - 1];
     membersAddress.pop();
     operations.pop();
   }

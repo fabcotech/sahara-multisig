@@ -120,8 +120,8 @@ describe('Multisig contract 2-3 users', function () {
     await instance.connect(userBWallet).vote(bufWelcomeUserA);
     await instance.connect(userCWallet).vote(bufWelcomeUserA);
     await instance.connect(userCWallet).execute(bufWelcomeUserA);
-    expect(await instance.membersAddress(0)).to.equal(userBWallet.address);
-    expect(await instance.membersAddress(1)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(0)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(1)).to.equal(userBWallet.address);
     expect(await instance.membersAddress(2)).to.equal(userAWallet.address);
   });
 
@@ -139,8 +139,8 @@ describe('Multisig contract 2-3 users', function () {
       // do nothing, throw expected
     }
     expect(member3Address).to.equal(null);
-    expect(await instance.membersAddress(0)).to.equal(userBWallet.address);
-    expect(await instance.membersAddress(1)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(0)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(1)).to.equal(userBWallet.address);
     let unauthorized = true;
     try {
       await instance
@@ -178,8 +178,8 @@ describe('Multisig contract 2-3 users', function () {
       // do nothing, throw expected
     }
     expect(member3Address).to.equal(null);
-    expect(await instance.membersAddress(0)).to.equal(userBWallet.address);
-    expect(await instance.membersAddress(1)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(0)).to.equal(userCWallet.address);
+    expect(await instance.membersAddress(1)).to.equal(userBWallet.address);
   });
 
   it('userB and userC (2/2) withdraw the 1.000.000 wei', async function () {
